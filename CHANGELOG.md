@@ -25,6 +25,11 @@
   together with a stale `in_water=0`. For this model, active Cleaning is always
   Wet. Observed status 10 represents parking underwater and remains Wet when
   REST omits a newer water-state report.
+- Fixed recent MQTT lifecycle state being retained indefinitely over newer REST
+  status. MQTT now remains authoritative per field for two polling intervals;
+  after that, fresh REST can update running, status, charging, and mode. Active
+  cleaning remains visible even when the independent cloud-online flag is
+  false, and redacted diagnostics report each field's source and age.
 
 ## [1.2.4] - 2026-08-06
 
