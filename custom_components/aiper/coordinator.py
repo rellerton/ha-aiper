@@ -12,6 +12,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -74,6 +75,8 @@ LIVE_STATE_KEYS = frozenset(
 )
 
 LIVE_REFRESH_INTERVAL = timedelta(minutes=5)
+S1_CAPABILITY_REFRESH_INTERVAL = timedelta(minutes=5)
+CLEAN_PATH_STORE_VERSION = 1
 
 # MQTT is the preferred source for operational state while its evidence is
 # recent. After two REST polling intervals without a new report, keeping it
@@ -681,6 +684,15 @@ class AiperDataUpdateCoordinator(DataUpdateCoordinator[DevicesState]):
         self._history_cache: dict[str, dict[str, Any]] = {}
         self._consumables_cache: dict[str, list[dict[str, Any]]] = {}
         self._clean_path_cache: dict[str, int] = {}
+        self._clean_path_store: Store[dict[str, int]] | None = (
+            Store(
+                hass,
+                CLEAN_PATH_STORE_VERSION,
+                f"{DOMAIN}.clean_path_cache.{config_entry.entry_id}",
+            )
+            if config_entry is not None
+            else None
+        )
         self._selected_mode_cache: dict[str, int] = {}
         self._s1_battery_samples: dict[str, list[dict[str, Any]]] = {}
         self._last_s1_mqtt_machine_report: dict[str, dict[str, Any]] = {}
@@ -1076,35 +1088,16 @@ class AiperDataUpdateCoordinator(DataUpdateCoordinator[DevicesState]):
                 self._devices[sn]["bluetooth_name"] = info_data.get("bleName")
                 self._devices[sn]["consumables"] = self._consumables_cache.get(sn) or []
                 self._apply_device_profile(sn)
-                raw_model = self._devices[sn].get("model") or self._devices[sn].get("deviceModel") or ""
-                model_key = str(raw_model).strip().lower().replace("-", "_").replace(" ", "_")
-
                 if has_capability(self._devices[sn], Capability.CLEAN_PATH):
-                    # Clean-path is not present in the Scuba_S1_2025 REST or
-                    # shadow payloads. Its verified source is AT+AUTO?, queried
-                    # through the existing serialized MQTT command channel.
-                    if model_key == SCUBA_S1_2025_MODEL and self.api.is_mqtt_connected():
-                        try:
-                            clean_path = await self.api.query_clean_path_setting(sn)
-                            if clean_path in (0, 1):
-                                self._clean_path_cache[sn] = clean_path
-                        except Exception as err:
-                            _LOGGER.debug("Clean-path query failed for %s: %s", sn, err)
                     self._devices[sn]["clean_path"] = self._clean_path_cache.get(sn)
                 else:
                     self._devices[sn]["clean_path"] = None
-
-                if model_key == SCUBA_S1_2025_MODEL and self.api.is_mqtt_connected():
-                    try:
-                        selected_mode = await self.api.query_cleaning_mode_setting(sn)
-                        if selected_mode in (1, 2, 3, 5):
-                            selected_mode_cache = getattr(self, "_selected_mode_cache", None)
-                            if selected_mode_cache is None:
-                                selected_mode_cache = self._selected_mode_cache = {}
-                            selected_mode_cache[sn] = selected_mode
-                    except Exception as err:
-                        _LOGGER.debug("Cleaning-mode query failed for %s: %s", sn, err)
                 self._devices[sn]["selected_mode"] = getattr(self, "_selected_mode_cache", {}).get(sn)
+
+            # Query S1 settings through their verified AT contracts. This same
+            # method also has an independent timer, so MQTT pushes cannot starve
+            # these capability reads by repeatedly resetting the REST poll.
+            await self.async_refresh_s1_capability_settings(publish=False)
 
             # Expire pending commands (UI hints)
             for _sn in list(self._command_state.keys()):
@@ -1665,8 +1658,76 @@ class AiperDataUpdateCoordinator(DataUpdateCoordinator[DevicesState]):
         return None
 
     def set_clean_path_cache(self, sn: str, value: int) -> None:
-        """Update cached clean-path preference."""
-        self._clean_path_cache[sn] = int(value)
+        """Update and persist the last confirmed clean-path preference."""
+        normalized = int(value)
+        if self._clean_path_cache.get(sn) == normalized:
+            return
+        self._clean_path_cache[sn] = normalized
+        store = getattr(self, "_clean_path_store", None)
+        hass = getattr(self, "hass", None)
+        if store is not None and hass is not None:
+            hass.async_create_task(store.async_save(dict(self._clean_path_cache)))
+
+    async def async_restore_clean_path_cache(self) -> None:
+        """Restore last confirmed clean paths before the first refresh."""
+        store = getattr(self, "_clean_path_store", None)
+        if store is None:
+            return
+        try:
+            restored = await store.async_load()
+        except Exception as err:
+            _LOGGER.debug("Clean-path cache restore failed: %s", err)
+            return
+        if not isinstance(restored, dict):
+            return
+        for sn, value in restored.items():
+            normalized = _clean_path_value(value)
+            if isinstance(sn, str) and normalized in (0, 1):
+                self._clean_path_cache[sn] = normalized
+
+    async def async_refresh_s1_capability_settings(self, *, publish: bool = True) -> None:
+        """Refresh S1 path/mode independently from push-resettable REST polls."""
+        is_mqtt_connected = getattr(self.api, "is_mqtt_connected", None)
+        if is_mqtt_connected is None or not is_mqtt_connected():
+            return
+
+        changed = False
+        for sn, device in self._devices.items():
+            raw_model = device.get("model") or device.get("deviceModel") or ""
+            model_key = str(raw_model).strip().lower().replace("-", "_").replace(" ", "_")
+            if model_key != SCUBA_S1_2025_MODEL:
+                continue
+
+            if has_capability(device, Capability.CLEAN_PATH):
+                try:
+                    clean_path = await self.api.query_clean_path_setting(sn)
+                    if clean_path in (0, 1):
+                        previous = self._clean_path_cache.get(sn)
+                        self.set_clean_path_cache(sn, clean_path)
+                        device["clean_path"] = clean_path
+                        changed |= previous != clean_path
+                except Exception as err:
+                    _LOGGER.debug("Clean-path query failed for %s: %s", sn, err)
+
+            try:
+                selected_mode = await self.api.query_cleaning_mode_setting(sn)
+                if selected_mode in (1, 2, 3, 5):
+                    selected_mode_cache = getattr(self, "_selected_mode_cache", None)
+                    if selected_mode_cache is None:
+                        selected_mode_cache = self._selected_mode_cache = {}
+                    previous_mode = selected_mode_cache.get(sn)
+                    selected_mode_cache[sn] = selected_mode
+                    device["selected_mode"] = selected_mode
+                    changed |= previous_mode != selected_mode
+            except Exception as err:
+                _LOGGER.debug("Cleaning-mode query failed for %s: %s", sn, err)
+
+        if publish and changed and self.data:
+            data = dict(self.data)
+            for sn, device in self._devices.items():
+                if sn in data:
+                    data[sn] = merge_device_state(data[sn], normalize_device_state(device), ignore_none=True)
+            self.async_set_updated_data(data)
 
     async def async_confirm_clean_path_selection(
         self,
