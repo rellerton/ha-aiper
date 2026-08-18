@@ -6,6 +6,7 @@ import logging
 from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +17,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 
 from .api import AWS_CREDENTIALS_TTL_DEBUG_SECONDS, AiperApi
 from .const import (
@@ -25,7 +27,7 @@ from .const import (
     DOMAIN,
 )
 from .controller import AiperDeviceController
-from .coordinator import AiperDataUpdateCoordinator
+from .coordinator import S1_CAPABILITY_REFRESH_INTERVAL, AiperDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ class AiperRuntimeData:
     controller: AiperDeviceController
     coordinator: AiperDataUpdateCoordinator
     unsub_keepalive: Callable[[], None] | None = None
+    unsub_capability_refresh: Callable[[], None] | None = None
 
 
 type AiperConfigEntry = ConfigEntry[AiperRuntimeData]
@@ -374,6 +377,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AiperConfigEntry) -> boo
         config_entry=entry,
     )
 
+    await coordinator.async_restore_clean_path_cache()
+
     _LOGGER.debug("Performing first data refresh...")
     await coordinator.async_config_entry_first_refresh()
     _LOGGER.info("First refresh complete, data: %s", list(coordinator.data.keys()) if coordinator.data else "None")
@@ -417,10 +422,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: AiperConfigEntry) -> boo
     try:
         if await api.connect_mqtt():
             await _subscribe_devices(api, callbacks)
-            if coordinator.has_scuba_s1_device():
-                # The Scuba_S1_2025 clean-path value is available only through
-                # an AT query. Scope the additional refresh to S1 accounts.
-                await coordinator.async_request_refresh()
+            # Query S1 path/mode directly after subscriptions exist; do not
+            # depend on a general REST refresh that push traffic can postpone.
+            await coordinator.async_refresh_s1_capability_settings()
             _LOGGER.info("MQTT connected and subscriptions registered")
         else:
             _LOGGER.warning(
@@ -429,6 +433,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: AiperConfigEntry) -> boo
             )
     except Exception as err:
         _LOGGER.warning("MQTT setup failed, continuing with REST polling only: %s", err)
+
+    async def _async_refresh_s1_capabilities(_now: datetime) -> None:
+        await coordinator.async_refresh_s1_capability_settings()
+
+    entry.runtime_data.unsub_capability_refresh = async_track_time_interval(
+        hass,
+        _async_refresh_s1_capabilities,
+        S1_CAPABILITY_REFRESH_INTERVAL,
+    )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -443,6 +456,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: AiperConfigEntry) -> bo
         if entry.runtime_data.unsub_keepalive:
             with suppress(Exception):
                 entry.runtime_data.unsub_keepalive()
+        if entry.runtime_data.unsub_capability_refresh:
+            with suppress(Exception):
+                entry.runtime_data.unsub_capability_refresh()
         await entry.runtime_data.api.disconnect()
 
     return unload_ok

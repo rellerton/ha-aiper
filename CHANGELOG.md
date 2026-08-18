@@ -37,6 +37,10 @@
   Device callbacks are retained even when MQTT is unavailable during initial
   setup, and diagnostics expose connection-recovery timing without credential
   material.
+- Persisted the last confirmed `Scuba_S1_2025` clean-path preference across
+  integration restarts. S1 path and mode queries now also run on an independent
+  five-minute timer, so frequent MQTT push updates cannot postpone them by
+  continually resetting the general coordinator refresh.
 
 ## [1.2.4] - 2026-08-06
 
