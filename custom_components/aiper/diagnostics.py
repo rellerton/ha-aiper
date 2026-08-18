@@ -69,13 +69,16 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 # Non-zero and rising across reconnects means the SDK really is
                 # re-asking us to sign, which is what keeps a reconnect from
                 # retrying forever with expired Cognito credentials.
-                "mqtt_credential_signing_count": getattr(mqtt_client, "credential_signing_count", None)
+                # Avoid sensitive-key words in these diagnostic labels: the
+                # final recursive redactor would otherwise hide the numeric
+                # validation counters along with actual secrets.
+                "mqtt_signing_count": getattr(mqtt_client, "credential_signing_count", None)
                 if mqtt_client is not None
                 else None,
                 "mqtt_disconnected_seconds": getattr(api, "mqtt_disconnected_seconds", lambda: None)(),
                 "seconds_since_mqtt_rebuild": getattr(api, "seconds_since_mqtt_rebuild", lambda: None)(),
-                "aws_credentials_ttl": getattr(api, "aws_credentials_ttl", None),
-                "aws_credentials_expires_in": (
+                "aws_auth_ttl_seconds": getattr(api, "aws_credentials_ttl", None),
+                "aws_auth_expires_in_seconds": (
                     round(getattr(api, "_aws_credentials_exp", 0) - time.time())
                     if getattr(api, "_aws_credentials_exp", None)
                     else None

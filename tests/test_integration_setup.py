@@ -16,8 +16,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components import aiper
 from custom_components.aiper import AiperRuntimeData
-from custom_components.aiper.api import AiperApi
-from custom_components.aiper.const import DOMAIN
+from custom_components.aiper.api import AWS_CREDENTIALS_TTL_DEBUG_SECONDS, AiperApi
+from custom_components.aiper.const import CONF_MQTT_DEBUG, DOMAIN
 from custom_components.aiper.controller import AiperDeviceController
 from custom_components.aiper.coordinator import AiperDataUpdateCoordinator
 
@@ -33,6 +33,9 @@ class FakeApi:
     login_called: bool = False
     connect_called: bool = False
     disconnected: bool = False
+    aws_credentials_ttl: int = 3300
+    first_refresh_ttl: int | None = None
+    registered: list[str] = field(default_factory=list)
     subscribed: list[str] = field(default_factory=list)
     shadow_requested: list[str] = field(default_factory=list)
 
@@ -41,6 +44,8 @@ class FakeApi:
         return True
 
     async def get_devices(self) -> list[dict[str, Any]]:
+        if self.first_refresh_ttl is None:
+            self.first_refresh_ttl = self.aws_credentials_ttl
         return [{"sn": "SN123", "model": "Shark_X", "name": "Pool Robot", "battLevel": 80, "machineStatus": 1}]
 
     async def get_device_info(self, sn: str) -> dict[str, Any]:
@@ -52,6 +57,9 @@ class FakeApi:
     async def connect_mqtt(self) -> bool:
         self.connect_called = True
         return True
+
+    def register_shadow_callback(self, sn: str, callback: Any) -> None:
+        self.registered.append(sn)
 
     async def subscribe_device(self, sn: str, callback: Any) -> bool:
         self.subscribed.append(sn)
@@ -107,6 +115,7 @@ async def test_setup_entry_stores_runtime_data_and_unload_disconnects(
 
     assert api.login_called is True
     assert api.connect_called is True
+    assert api.registered == ["SN123"]
     assert api.async_session == "session"
     assert coordinator.data is not None
     assert coordinator.data["SN123"]["device_info"].value == "Pool Robot"
@@ -155,6 +164,7 @@ async def test_setup_survives_mqtt_failure(
         domain=DOMAIN,
         entry_id="entry-mqtt-down",
         data={"username": "user@example.com", "password": "secret", "region": "asia"},
+        options={CONF_MQTT_DEBUG: True},
         state=ConfigEntryState.SETUP_IN_PROGRESS,
     )
     entry.add_to_hass(hass)
@@ -163,6 +173,10 @@ async def test_setup_survives_mqtt_failure(
 
     api = cast(NoMqttApi, entry.runtime_data.api)
     assert api.connect_called is True
+    assert api.first_refresh_ttl == AWS_CREDENTIALS_TTL_DEBUG_SECONDS
+    # The callback must survive an initial connect failure so the watchdog can
+    # subscribe this device when its later transport rebuild succeeds.
+    assert api.registered == ["SN123"]
     assert api.subscribed == []
     # Entities are still published, backed by REST polling.
     assert forwarded == [(cast(ConfigEntry, entry), aiper.PLATFORMS)]

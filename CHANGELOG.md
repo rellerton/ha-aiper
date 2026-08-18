@@ -30,6 +30,13 @@
   after that, fresh REST can update running, status, charging, and mode. Active
   cleaning remains visible even when the independent cloud-online flag is
   false, and redacted diagnostics report each field's source and age.
+- Fixed MQTT remaining disconnected after temporary AWS credentials expire or
+  the AWS IoT connection is interrupted. REST-backed entities stay available,
+  signing credentials refresh without blocking Home Assistant, and a
+  rate-limited watchdog rebuilds and re-subscribes prolonged connections.
+  Device callbacks are retained even when MQTT is unavailable during initial
+  setup, and diagnostics expose connection-recovery timing without credential
+  material.
 
 ## [1.2.4] - 2026-08-06
 

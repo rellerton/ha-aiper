@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 import pytest
@@ -17,6 +18,11 @@ import pytest
 from custom_components.aiper.api import (
     MQTT_CREDENTIALS_REFRESH_MARGIN_SECONDS,
     AiperApi,
+)
+from custom_components.aiper.coordinator import (
+    MQTT_REBUILD_MIN_INTERVAL_SECONDS,
+    MQTT_RECONNECT_GRACE_SECONDS,
+    AiperDataUpdateCoordinator,
 )
 from custom_components.aiper.mqtt import AwsIotCredentials, AwsIotMqttTransport
 
@@ -203,6 +209,25 @@ def test_mqtt_disconnected_seconds_tracks_a_single_outage() -> None:
     assert api._mqtt_first_disconnected_at == started_at
 
 
+def test_mqtt_disconnected_seconds_uses_transport_interruption_time() -> None:
+    """The next coordinator poll should retain the transport's real outage age."""
+    api = _api()
+
+    class InterruptedTransport:
+        last_disconnected_at = datetime.now(UTC) - timedelta(minutes=5)
+
+        def is_connected(self) -> bool:
+            return False
+
+    api._mqtt_client = InterruptedTransport()
+    api._mqtt_connected = True
+
+    down_seconds = api.mqtt_disconnected_seconds()
+
+    assert down_seconds is not None
+    assert down_seconds >= 300
+
+
 def test_reconnecting_clears_the_outage_clock() -> None:
     """Once connected again the outage measurement resets."""
     api = _api()
@@ -218,3 +243,116 @@ def test_reconnecting_clears_the_outage_clock() -> None:
 
     assert api.is_mqtt_connected() is True
     assert api.mqtt_disconnected_seconds() is None
+
+
+@pytest.mark.asyncio
+async def test_watchdog_rebuilds_after_grace_period() -> None:
+    """A prolonged outage should refresh credentials and rebuild once."""
+
+    class MaintenanceApi:
+        refreshes = 0
+        rebuilds = 0
+
+        async def async_refresh_mqtt_credentials(self) -> None:
+            self.refreshes += 1
+
+        def mqtt_disconnected_seconds(self) -> float:
+            return MQTT_RECONNECT_GRACE_SECONDS + 1
+
+        def seconds_since_mqtt_rebuild(self) -> None:
+            return None
+
+        async def reconnect_mqtt(self) -> bool:
+            self.rebuilds += 1
+            return True
+
+    api = MaintenanceApi()
+    coordinator = AiperDataUpdateCoordinator.__new__(AiperDataUpdateCoordinator)
+    coordinator.api = cast(Any, api)
+
+    await coordinator._async_maintain_mqtt()
+
+    assert api.refreshes == 1
+    assert api.rebuilds == 1
+
+
+@pytest.mark.asyncio
+async def test_watchdog_respects_grace_and_rebuild_rate_limit() -> None:
+    """Short outages and recently rebuilt transports must not be rebuilt."""
+
+    class MaintenanceApi:
+        down_seconds = MQTT_RECONNECT_GRACE_SECONDS - 1
+        since_rebuild: float | None = None
+        rebuilds = 0
+
+        async def async_refresh_mqtt_credentials(self) -> None:
+            return None
+
+        def mqtt_disconnected_seconds(self) -> float:
+            return self.down_seconds
+
+        def seconds_since_mqtt_rebuild(self) -> float | None:
+            return self.since_rebuild
+
+        async def reconnect_mqtt(self) -> bool:
+            self.rebuilds += 1
+            return True
+
+    api = MaintenanceApi()
+    coordinator = AiperDataUpdateCoordinator.__new__(AiperDataUpdateCoordinator)
+    coordinator.api = cast(Any, api)
+
+    await coordinator._async_maintain_mqtt()
+    assert api.rebuilds == 0
+
+    api.down_seconds = MQTT_RECONNECT_GRACE_SECONDS + 1
+    api.since_rebuild = MQTT_REBUILD_MIN_INTERVAL_SECONDS - 1
+    await coordinator._async_maintain_mqtt()
+    assert api.rebuilds == 0
+
+
+@pytest.mark.asyncio
+async def test_reconnect_resubscribes_callbacks_registered_before_initial_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A later watchdog rebuild must subscribe devices skipped at setup."""
+    api = _api()
+
+    def callback(*_: Any) -> None:
+        return None
+
+    api.register_shadow_callback("SN123", callback)
+
+    class ConnectedTransport:
+        def __init__(self) -> None:
+            self.subscriptions: list[str] = []
+            self.published: list[str] = []
+
+        def is_connected(self) -> bool:
+            return True
+
+        async def async_subscribe(self, topic: str, callback: Any, qos: int) -> bool:
+            self.subscriptions.append(topic)
+            return True
+
+        async def async_publish(self, topic: str, payload: str, qos: int) -> bool:
+            self.published.append(topic)
+            return True
+
+    transport = ConnectedTransport()
+
+    async def fake_disconnect() -> None:
+        api._mqtt_client = None
+        api._mqtt_connected = False
+
+    async def fake_connect() -> bool:
+        api._mqtt_client = transport
+        api._mqtt_connected = True
+        return True
+
+    monkeypatch.setattr(api, "disconnect_mqtt", fake_disconnect)
+    monkeypatch.setattr(api, "connect_mqtt", fake_connect)
+
+    assert await api.reconnect_mqtt() is True
+    assert len(transport.subscriptions) == len(api._subscription_topics_for_sn("SN123"))
+    assert len(transport.published) == 1

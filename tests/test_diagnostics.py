@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -33,7 +34,9 @@ async def test_diagnostics_redacts_sensitive_runtime_data(hass: HomeAssistant) -
         _iot_endpoint="abcdefghijk.iot.eu-central-1.amazonaws.com",
         _identity_id="eu-central-1:1234567890",
         _aws_region="eu-central-1",
-        _mqtt_client=SimpleNamespace(last_error=None, reconnect_count=1),
+        _mqtt_client=SimpleNamespace(last_error=None, reconnect_count=1, credential_signing_count=3),
+        aws_credentials_ttl=3300,
+        _aws_credentials_exp=time.time() + 3200,
         is_mqtt_connected=lambda: True,
     )
     coordinator = SimpleNamespace(
@@ -93,6 +96,9 @@ async def test_diagnostics_redacts_sensitive_runtime_data(hass: HomeAssistant) -
     assert diagnostics["command_state"]["SN123"]["pending"]["mode"]["value"] == 1
     assert diagnostics["api"]["mqtt_client"] == "SimpleNamespace"
     assert diagnostics["api"]["mqtt_reconnect_count"] == 1
+    assert diagnostics["api"]["mqtt_signing_count"] == 3
+    assert diagnostics["api"]["aws_auth_ttl_seconds"] == 3300
+    assert 3190 <= diagnostics["api"]["aws_auth_expires_in_seconds"] <= 3200
     assert diagnostics["api"]["mqtt_connected"] is True
     assert diagnostics["field_sources"]["SN123"]["status"]["source"] == "rest"
     assert diagnostics["state_reconciliation"]["SN123"]["trigger"] == "rest_machine_status"
