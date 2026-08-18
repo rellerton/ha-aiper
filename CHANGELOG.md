@@ -47,6 +47,10 @@
   after that, fresh REST can update running, status, charging, and mode. Active
   cleaning remains visible even when the independent cloud-online flag is
   false, and redacted diagnostics report each field's source and age.
+- Persisted the last confirmed `Scuba_S1_2025` clean-path preference across
+  integration restarts. S1 path and mode queries now also run on an independent
+  five-minute timer, so frequent MQTT push updates cannot postpone them by
+  continually resetting the general coordinator refresh.
 
 ## [1.2.4] - 2026-08-06
 
