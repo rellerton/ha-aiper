@@ -567,7 +567,10 @@ class AiperApi:
         if self._openid_token_exp and (self._openid_token_exp - time.time()) < 120:
             await self.get_openid_token()
 
-        if self._aws_credentials_exp and (self._aws_credentials_exp - time.time()) > 120:
+        if (
+            self._aws_credentials_exp
+            and (self._aws_credentials_exp - time.time()) > MQTT_CREDENTIALS_REFRESH_MARGIN_SECONDS
+        ):
             return self._aws_credentials
 
         region = self._aws_region
@@ -1147,7 +1150,18 @@ class AiperApi:
         if connected:
             self._mqtt_first_disconnected_at = None
         elif self._mqtt_first_disconnected_at is None:
-            self._mqtt_first_disconnected_at = datetime.now(UTC)
+            now = datetime.now(UTC)
+            transport_disconnected_at = getattr(self._mqtt_client, "last_disconnected_at", None)
+            if isinstance(transport_disconnected_at, datetime):
+                if transport_disconnected_at.tzinfo is None:
+                    transport_disconnected_at = transport_disconnected_at.replace(tzinfo=UTC)
+                else:
+                    transport_disconnected_at = transport_disconnected_at.astimezone(UTC)
+            else:
+                transport_disconnected_at = now
+            # Preserve the transport's actual interruption time so the
+            # five-minute coordinator poll does not start a second grace period.
+            self._mqtt_first_disconnected_at = min(transport_disconnected_at, now)
         return connected
 
     def mqtt_disconnected_seconds(self) -> float | None:
@@ -1228,7 +1242,12 @@ class AiperApi:
         with self._lock:
             if sn not in self._shadow_callbacks:
                 self._shadow_callbacks[sn] = []
-            self._shadow_callbacks[sn].append(callback)
+            if callback not in self._shadow_callbacks[sn]:
+                self._shadow_callbacks[sn].append(callback)
+
+    def register_shadow_callback(self, sn: str, callback: Callable[..., None]) -> None:
+        """Retain a device callback even when the initial MQTT connect fails."""
+        self._register_shadow_callback(sn, callback)
 
     def _subscription_topics_for_sn(self, sn: str) -> tuple[str, ...]:
         """Return MQTT topics to subscribe for a device."""

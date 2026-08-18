@@ -128,11 +128,7 @@ class AwsIotMqttTransport:
         else:
             self.credentials = creds
 
-        _LOGGER.debug(
-            "Signing AWS IoT MQTT connection (invocation #%d, access_key_id=%s...)",
-            self.credential_signing_count,
-            creds.access_key_id[:6],
-        )
+        _LOGGER.debug("Signing AWS IoT MQTT connection (invocation #%d)", self.credential_signing_count)
         return auth.AwsCredentials(
             creds.access_key_id,
             creds.secret_access_key,
