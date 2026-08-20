@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from typing import Any, cast
+from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -416,9 +417,12 @@ async def test_stale_mqtt_state_yields_to_fresh_rest_cleaning(hass: HomeAssistan
         ("running", "status", "charging", "mode"),
         observed_at=now - timedelta(hours=2),
     )
+    capability_refresh = AsyncMock()
+    coordinator.async_refresh_s1_capability_settings = capability_refresh  # type: ignore[method-assign]
 
     data = await coordinator._async_update_data()
 
+    capability_refresh.assert_not_awaited()
     assert data["SN123"]["battery"].value == 97
     assert data["SN123"]["status"].value == "Cleaning"
     assert data["SN123"]["status"].attributes == {"code": 1}
