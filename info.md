@@ -19,10 +19,18 @@ Alternatively, follow these manual steps:
 4. Sign in with the Aiper account used by your mobile app.
 
 ---
-> For advanced troubleshooting, security practices, and Lovelace dashboard examples, please view the full documentation on [GitHub](https://github.com/kmich/ha-aiper).
+> This is the rellerton community build, based on the original
+> [kmich/ha-aiper](https://github.com/kmich/ha-aiper) project. For advanced
+> troubleshooting, security practices, and Lovelace dashboard examples, view
+> the full [fork documentation](https://github.com/rellerton/ha-aiper).
 
 
 ## Recent Changes
+
+### v1.3.0
+- Added field-tested Scuba S1 support, source-freshness state reconciliation,
+  resilient MQTT credential and connection recovery, and persistent clean-path
+  settings with independent capability refresh scheduling.
 
 ### v1.2.4
 - Fixed Scuba S3 reporting charging as "Returning" and full charge as "Charging", which left the charging sensor inverted. Status codes are now interpreted per model; other models are unchanged.

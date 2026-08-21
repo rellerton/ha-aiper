@@ -2,6 +2,12 @@
 
 [![HACS][hacs-badge]][hacs-url] [![GitHub Release][release-badge]][release-url] [![Validate][validate-badge]][validate-url]
 
+> [!NOTE]
+> **rellerton community build.** This fork carries field-tested Scuba S1 support
+> and connection-recovery improvements while the corresponding changes are
+> reviewed upstream. It is based on and remains grateful to
+> [kmich/ha-aiper](https://github.com/kmich/ha-aiper), the original project.
+
 **Bring your Aiper pool cleaner and water quality monitor into Home Assistant.**  
 View live status, battery, charging state, cleaning modes, consumables, and water chemistry (pH, ORP, Chlorine) alongside safe controls, directly in your smart home dashboard.
 
@@ -31,7 +37,7 @@ The current 2026 retail Scuba S1 identifies itself through Aiper's cloud as
 
 1. In HACS, open **Integrations**.
 2. Open the three-dot menu and choose **Custom repositories**.
-3. Add `https://github.com/kmich/ha-aiper` as an **Integration** repository.
+3. Add `https://github.com/rellerton/ha-aiper` as an **Integration** repository.
 4. Install **Aiper Pool Cleaner** and restart Home Assistant.
 
 ### Configuration
@@ -78,7 +84,7 @@ To use the device headers, place an image (like `docs/assets/scuba_x1.png`) into
 
 [hacs-badge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
 [hacs-url]: https://github.com/hacs/integration
-[release-badge]: https://img.shields.io/github/v/release/kmich/ha-aiper
-[release-url]: https://github.com/kmich/ha-aiper/releases
-[validate-badge]: https://img.shields.io/github/actions/workflow/status/kmich/ha-aiper/validate.yml?label=validate
-[validate-url]: https://github.com/kmich/ha-aiper/actions/workflows/validate.yml
+[release-badge]: https://img.shields.io/github/v/release/rellerton/ha-aiper
+[release-url]: https://github.com/rellerton/ha-aiper/releases
+[validate-badge]: https://img.shields.io/github/actions/workflow/status/rellerton/ha-aiper/validate.yml?label=validate
+[validate-url]: https://github.com/rellerton/ha-aiper/actions/workflows/validate.yml

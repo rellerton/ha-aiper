@@ -88,9 +88,7 @@ def test_delayed_mqtt_payload_keeps_its_original_observation_time() -> None:
     )
 
     assert coordinator._mqtt_field_is_fresh("SN123", "status", dt_util.utcnow()) is False
-    assert coordinator._live_field_sources["SN123"]["status"]["observed_at"] == observed_at.replace(
-        microsecond=0
-    )
+    assert coordinator._live_field_sources["SN123"]["status"]["observed_at"] == observed_at.replace(microsecond=0)
 
 
 @pytest.mark.asyncio
@@ -372,9 +370,7 @@ async def test_stale_mqtt_state_yields_to_fresh_rest_cleaning(hass: HomeAssistan
     coordinator._last_s1_mqtt_machine_report = {}
     coordinator._state_reconciliation = {}
     coordinator._live_field_sources = {}
-    coordinator.data = {
-        "SN123": normalize_device_state(dict(coordinator._devices["SN123"]))
-    }
+    coordinator.data = {"SN123": normalize_device_state(dict(coordinator._devices["SN123"]))}
     coordinator._record_live_field_sources(
         "SN123",
         "mqtt",

@@ -2,17 +2,17 @@
   "domain": "aiper",
   "name": "Aiper Pool Cleaner",
   "codeowners": [
-    "@kmich"
+    "@rellerton"
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/kmich/ha-aiper",
+  "documentation": "https://github.com/rellerton/ha-aiper",
   "integration_type": "hub",
   "iot_class": "cloud_push",
-  "issue_tracker": "https://github.com/kmich/ha-aiper/issues",
+  "issue_tracker": "https://github.com/rellerton/ha-aiper/issues",
   "quality_scale": "silver",
   "requirements": [
     "awsiotsdk>=1.29.0"
   ],
-  "version": "1.2.4"
+  "version": "1.3.0"
 }

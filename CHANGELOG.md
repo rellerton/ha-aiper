@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.3.0] - 2026-08-21
+
 ### Added
 - Added hardware-verified `Scuba_S1_2025` clean-path support using the official
   app's `AT+AUTO?` query and `AT+AUTO=0/1` set contract. This model no longer
