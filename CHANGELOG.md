@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Fixed S1 path/mode capability refreshes briefly republishing stale cached
+  lifecycle values over newer MQTT state. Capability refreshes now update only
+  their path and mode fields, preserving current status, battery, water state,
+  and runtime.
+- Fixed config-entry diagnostics reading the obsolete `hass.data` runtime
+  location. Diagnostics now use `ConfigEntry.runtime_data` while retaining a
+  compatibility fallback for older loaded entries.
+
 ## [1.3.0] - 2026-08-21
 
 ### Added
