@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added a reusable, capability-gated Estimated Cleaning Time duration sensor.
+  It is enabled initially only for `Scuba_S1_2025`, whose runtime units,
+  lifecycle timer, reset, charging, and stale-report behavior have been
+  physically validated. It anchors to the separate raw Current Cleaning Time
+  sensor and advances locally once per minute only while normalized state is
+  Cleaning/running/not charging; changed cloud samples correct the estimate
+  immediately, while unchanged stale snapshots do not suppress progression.
+  The estimator restores across Home Assistant restarts only when Cleaning is
+  still authoritative and resets to zero otherwise. If Aiper remains falsely
+  latched at Cleaning after the physical robot stops, the estimate can continue
+  until a newer lifecycle report arrives. The same mechanism can be enabled
+  for other Aiper robots after their runtime and lifecycle semantics are
+  validated; no other model profile changes in this release.
 - Fixed S1 path/mode capability refreshes briefly republishing stale cached
   lifecycle values over newer MQTT state. Capability refreshes now update only
   their path and mode fields, preserving current status, battery, water state,

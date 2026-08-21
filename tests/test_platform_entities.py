@@ -274,6 +274,7 @@ async def test_scuba_entity_publication_uses_scuba_capabilities(hass: HomeAssist
         if entity.entity_description.key != "last_cleaning_start"
     )
     assert "mode" in _keys(sensor_entities)
+    assert "estimated_cleaning_time" not in _keys(sensor_entities)
     assert _entity_by_key(sensor_entities, "mode").available is False
     assert "in_water" in _keys(binary_entities)
     assert "running" in _keys(binary_entities)
@@ -324,6 +325,8 @@ async def test_scuba_s1_only_publishes_observed_entities(hass: HomeAssistant) ->
         "propeller",
     }.isdisjoint(sensor_keys)
     assert "clean_path" in sensor_keys
+    assert "estimated_cleaning_time" in sensor_keys
+    assert _entity_by_key(sensor_entities, "estimated_cleaning_time").native_value == pytest.approx(241.8)
     assert _select_keys(select_entities) == {"mode_selection", "clean_path"}
     mode_select = next(entity for entity in select_entities if entity._key == "mode_selection")
     clean_path_select = next(entity for entity in select_entities if entity._key == "clean_path")
@@ -449,6 +452,7 @@ async def test_hydrocomm_entity_publication_uses_monitor_capabilities(hass: Home
     }.issubset(sensor_keys)
     assert "mode" not in sensor_keys
     assert "runtime" not in sensor_keys
+    assert "estimated_cleaning_time" not in sensor_keys
     assert "total_cleanings" not in sensor_keys
     assert "roller_brush" not in sensor_keys
     assert _entity_by_key(sensor_entities, "status").native_value == "Charging"
