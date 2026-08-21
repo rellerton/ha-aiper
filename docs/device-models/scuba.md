@@ -73,6 +73,24 @@ retains the observed MicroMesh consumable and suppresses water temperature,
 charge type, roller brush, caterpillar tread, and propeller entities for which
 this device provides no usable data.
 
+The profile also enables the reusable Estimated Cleaning Time duration sensor.
+The raw Current Cleaning Time sensor remains the authoritative Aiper/cloud
+sample. The estimated sensor anchors to a changed raw sample, then advances
+locally once per minute only while normalized state remains Cleaning, running,
+and not charging. Repeated unchanged REST snapshots do not re-anchor it. It
+resets to zero when runtime resets, cleaning stops, or charging begins, and it
+restores across a Home Assistant restart only if Cleaning is still reported.
+
+This mechanism is capability-gated rather than hard-coded into the S1 entity
+factory. It is enabled only for `Scuba_S1_2025` today because this model's
+runtime units, state-timer behavior, reset behavior, charging behavior, and
+stale-report behavior have been physically validated. Other model profiles can
+enable it later after equivalent evidence; this release does not claim or alter
+their compatibility. Because the cloud lifecycle remains authoritative, a
+backend falsely latched at Cleaning after the physical robot stops can make the
+estimate continue until a newer lifecycle report arrives. No maximum cycle cap
+is guessed.
+
 The query and both writes were captured from the official app. A subsequent
 read-only AWS IoT query from the integration returned code `1` after Adaptive
 was selected. The REST clean-path endpoint returns `-1`, and the setting is not

@@ -48,6 +48,7 @@ class Capability(StrEnum):
     MICROMESH_FILTER = "micromesh_filter"
     CATERPILLAR_TREAD = "caterpillar_tread"
     PROPELLER = "propeller"
+    ESTIMATED_CLEANING_TIME = "estimated_cleaning_time"
 
 
 SURFER_MODEL_MARKERS = (DeviceFamily.SURFER.value,)
@@ -96,7 +97,7 @@ SCUBA_S1_2025_CAPABILITIES = SCUBA_CAPABILITIES - frozenset(
         Capability.CATERPILLAR_TREAD,
         Capability.PROPELLER,
     }
-)
+) | frozenset({Capability.ESTIMATED_CLEANING_TIME})
 
 SURFER_CAPABILITIES = (
     COMMON_CAPABILITIES - frozenset({Capability.ROLLER_BRUSH, Capability.CATERPILLAR_TREAD})
