@@ -27,6 +27,14 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.1
+- Added a capability-gated Estimated Cleaning Time duration sensor, enabled
+  initially for the physically validated Scuba S1 profile. It anchors to raw
+  cloud runtime, advances locally while cleaning, restores safely across Home
+  Assistant restarts, and resets on stop or charging.
+- Prevented path/mode capability refreshes from briefly republishing stale
+  lifecycle state, and corrected runtime diagnostics lookup.
+
 ### v1.3.0
 - Added field-tested Scuba S1 support, source-freshness state reconciliation,
   resilient MQTT credential and connection recovery, and persistent clean-path
