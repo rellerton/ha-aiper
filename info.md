@@ -27,6 +27,12 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.2
+- Prevented redundant S1 MQTT topics from briefly replaying an older Cleaning
+  lifecycle immediately after a current Parked or Charging report.
+- S1 charging reports now clear stale In Water state even when the cloud omits
+  that field. The inference is limited to the physically validated S1 profile.
+
 ### v1.3.1
 - Added a capability-gated Estimated Cleaning Time duration sensor, enabled
   initially for the physically validated Scuba S1 profile. It anchors to raw

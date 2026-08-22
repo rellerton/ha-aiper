@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.3.2] - 2026-08-22
+
 - Suppressed an observed Scuba S1 MQTT lifecycle replay where redundant cloud
   topics briefly republished an older Cleaning snapshot immediately after a
   Parked or Charging report. The narrow two-second guard is enabled only for
