@@ -91,6 +91,14 @@ backend falsely latched at Cleaning after the physical robot stops can make the
 estimate continue until a newer lifecycle report arrives. No maximum cycle cap
 is guessed.
 
+The S1 publishes lifecycle snapshots through redundant MQTT topics. Field
+testing found that an older Cleaning snapshot can arrive less than 250 ms after
+a current Parked report and then be corrected again. The integration gives a
+new Parked or Charging report a narrow two-second precedence window so this
+impossible terminal-to-running replay does not leak into Home Assistant history;
+a genuine later start remains accepted. Charging also implies that this
+physically validated model is dry when a report omits the `in_water` field.
+
 The query and both writes were captured from the official app. A subsequent
 read-only AWS IoT query from the integration returned code `1` after Adaptive
 was selected. The REST clean-path endpoint returns `-1`, and the setting is not
