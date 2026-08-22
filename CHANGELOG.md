@@ -2,6 +2,15 @@
 
 ## [1.3.0] - 2026-08-30
 
+- Suppressed an observed Scuba S1 MQTT lifecycle replay where redundant cloud
+  topics briefly republished an older Cleaning snapshot immediately after a
+  Parked or Charging report. The narrow two-second guard is enabled only for
+  `Scuba_S1_2025`, preserves the newer terminal state and battery/runtime/water
+  fields, and does not block a later genuine cleaning start.
+- Fixed `Scuba_S1_2025` charging reports that omit `in_water`: charging now
+  authoritatively clears a stale submerged state. Other models retain their
+  existing payload-driven water semantics.
+
 - Added a reusable, capability-gated Estimated Cleaning Time duration sensor.
   It is enabled initially only for `Scuba_S1_2025`, whose runtime units,
   lifecycle timer, reset, charging, and stale-report behavior have been
