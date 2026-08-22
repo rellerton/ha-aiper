@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [1.3.3] - 2026-08-22
+
+- Strengthened the physically validated S1 charging reconciliation: Charging
+  now overrides both an omitted `in_water` field and an explicitly replayed
+  stale wet value. This remains model-specific; other cleaners keep their
+  payload-reported water state.
+
 ## [1.3.2] - 2026-08-22
 
 - Suppressed an observed Scuba S1 MQTT lifecycle replay where redundant cloud
@@ -10,7 +17,8 @@
   `Scuba_S1_2025`, preserves the newer terminal state and battery/runtime/water
   fields, and does not block a later genuine cleaning start.
 - Fixed `Scuba_S1_2025` charging reports that omit `in_water`: charging now
-  authoritatively clears a stale submerged state. Other models retain their
+  begins reconciling a stale submerged state. Version 1.3.3 extends that rule to
+  reports that explicitly replay the stale wet value. Other models retain their
   existing payload-driven water semantics.
 
 ## [1.3.1] - 2026-08-21

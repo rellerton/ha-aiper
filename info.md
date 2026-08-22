@@ -27,6 +27,10 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.3
+- S1 charging now overrides both an omitted In Water field and an explicitly
+  replayed stale wet value; other models remain payload-driven.
+
 ### v1.3.2
 - Prevented redundant S1 MQTT topics from briefly replaying an older Cleaning
   lifecycle immediately after a current Parked or Charging report.
