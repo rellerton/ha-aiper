@@ -118,11 +118,7 @@ def test_scuba_s1_suppresses_immediate_terminal_to_cleaning_replay() -> None:
         "SN123",
         {
             "_topic": "$aws/things/SN123/shadow/get/accepted",
-            "state": {
-                "reported": {
-                    "Machine": {"status": 1, "cap": 71, "mode": 1, "run_time": 71, "in_water": 1}
-                }
-            },
+            "state": {"reported": {"Machine": {"status": 1, "cap": 71, "mode": 1, "run_time": 71, "in_water": 1}}},
         },
     )
 
