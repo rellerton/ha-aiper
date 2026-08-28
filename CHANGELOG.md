@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Preserved a newly confirmed `Scuba_S1_2025` Cleaning start across delayed
+  redundant MQTT Idle/zero snapshots. A model-gated 15-second settling window
+  now protects only coherent Cleaning reports with wet or positive-runtime
+  evidence; Parked and Charging still stop the cycle immediately, a later
+  uncorrelated Idle remains allowed, and explicitly older timestamped Idle
+  snapshots remain stale. Other Aiper models are unchanged.
+
 - Strengthened the physically validated S1 charging reconciliation: Charging
   now overrides both an omitted `in_water` field and an explicitly replayed
   stale wet value. This remains model-specific; other cleaners keep their
