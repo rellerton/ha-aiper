@@ -27,6 +27,11 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.4
+- Preserved a newly confirmed S1 Cleaning start across delayed redundant
+  Idle/zero snapshots while keeping Parked, Charging, later uncorrelated Idle,
+  and other robot models on their existing semantics.
+
 ### v1.3.3
 - S1 charging now overrides both an omitted In Water field and an explicitly
   replayed stale wet value; other models remain payload-driven.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.3.4] - 2026-08-27
+
 - Preserved a newly confirmed `Scuba_S1_2025` Cleaning start across delayed
   redundant MQTT Idle/zero snapshots. A model-gated 15-second settling window
   now protects only coherent Cleaning reports with wet or positive-runtime
