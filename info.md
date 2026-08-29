@@ -24,6 +24,11 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.5
+- Rebased the community reliability build onto the maintainer's merged S1
+  capability implementation and preserved the validated MQTT, lifecycle,
+  charging, clean-path, and estimated-runtime corrections.
+
 ### v1.2.4
 - Fixed Scuba S3 reporting charging as "Returning" and full charge as "Charging", which left the charging sensor inverted. Status codes are now interpreted per model; other models are unchanged.
 

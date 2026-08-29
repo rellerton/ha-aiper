@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## [1.3.5] - 2026-08-29
+
+- Reconciled the community build onto upstream's merged Scuba S1 capability
+  base, retaining the maintainer's REST/MQTT recency, model fallback, mode
+  preservation, and model-scoped confirmation corrections.
+- Retained the physically validated community reliability work for MQTT
+  reconnects, independent capability refreshes, clean-path persistence,
+  estimated cleaning time, coherent completion/charging state, and confirmed
+  cleaning-start freshness.
+- Physically validated the reconciled build through a live mid-cycle takeover,
+  independent minute-by-minute estimation, retrieval/charging reset, and active
+  suppression of a stale Cleaning replay after the terminal report.
+
 - Preserved a newly confirmed `Scuba_S1_2025` Cleaning start across delayed
   redundant MQTT Idle/zero snapshots. A model-gated 15-second settling window
   now protects only coherent Cleaning reports with wet or positive-runtime
