@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## [1.3.6] - 2026-08-29
+
+- Incorporated the focused upstream review follow-up: MQTT diagnostics use the
+  config entry's current `runtime_data` storage, with a guarded legacy fallback.
+  The community build already carried that diagnostics correction, so its
+  production code delta in this release is unchanged.
+- Added one bounded OpenID refresh and Cognito credential-exchange retry after
+  a Cognito 4xx. This recovers regions or devices whose OpenID response omits
+  `tokenDuration`, without allowing persistent authentication failures to loop.
+
 ## [1.3.5] - 2026-08-29
 
 - Reconciled the community build onto upstream's merged Scuba S1 capability

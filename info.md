@@ -24,6 +24,11 @@ Alternatively, follow these manual steps:
 
 ## Recent Changes
 
+### v1.3.6
+- Corrected the upstream MQTT diagnostics path and added a single bounded
+  OpenID refresh/retry when Cognito rejects a cached token whose expiry was not
+  supplied by Aiper.
+
 ### v1.3.5
 - Rebased the community reliability build onto the maintainer's merged S1
   capability implementation and preserved the validated MQTT, lifecycle,
