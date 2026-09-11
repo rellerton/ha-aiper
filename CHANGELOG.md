@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.7.0] - 2026-09-11
 
 ### Added
 - Added a reusable, capability-gated Estimated Cleaning Time duration sensor.
@@ -16,6 +16,10 @@
   until a newer lifecycle report arrives. The same mechanism can be enabled
   for other Aiper robots after their runtime and lifecycle semantics are
   validated; no other model profile changes in this release.
+- Active Cleaning can begin estimating from an authoritative zero-minute raw
+  runtime, including after a Home Assistant restart. S1 runtime anchors are
+  reconstructed as whole minutes, and restored estimates are accepted only
+  when their saved raw anchor matches the current coordinator anchor.
 
 ## [1.6.0] - 2026-09-07
 
