@@ -2,11 +2,14 @@
 
 [![HACS][hacs-badge]][hacs-url] [![GitHub Release][release-badge]][release-url] [![Validate][validate-badge]][validate-url]
 
-> [!NOTE]
-> **rellerton community build.** This fork carries field-tested Scuba S1 support
-> and connection-recovery improvements while the corresponding changes are
-> reviewed upstream. It is based on and remains grateful to
-> [kmich/ha-aiper](https://github.com/kmich/ha-aiper), the original project.
+> [!IMPORTANT]
+> **Development has moved upstream.** The changes developed in this fork through
+> `v1.7.0` have been merged into
+> [kmich/ha-aiper](https://github.com/kmich/ha-aiper) and are included in its
+> `v1.7.0` release. New installations, updates, and support requests should use
+> the upstream repository. This fork remains available for historical releases
+> and may be reused for focused future development, but it is not the current
+> distribution source.
 
 **Bring your Aiper pool cleaner and water quality monitor into Home Assistant.**  
 View live status, battery, charging state, cleaning modes, consumables, and water chemistry (pH, ORP, Chlorine) alongside safe controls, directly in your smart home dashboard.
@@ -37,7 +40,7 @@ The current 2026 retail Scuba S1 identifies itself through Aiper's cloud as
 
 1. In HACS, open **Integrations**.
 2. Open the three-dot menu and choose **Custom repositories**.
-3. Add `https://github.com/rellerton/ha-aiper` as an **Integration** repository.
+3. Add `https://github.com/kmich/ha-aiper` as an **Integration** repository.
 4. Install **Aiper Pool Cleaner** and restart Home Assistant.
 
 ### Configuration
@@ -65,7 +68,10 @@ The integration uses "capability profiles" to automatically expose only the feat
 
 ## 📖 Documentation & Support
 
-If you encounter issues, please read our guides before opening a ticket:
+For current support, use the
+[upstream issue tracker](https://github.com/kmich/ha-aiper/issues). The guides
+retained in this fork document the community-build work and remain useful as
+historical reference:
 
 - [Diagnostics & Troubleshooting Guide](docs/support/diagnostics-and-troubleshooting.md) - Learn how to redact your logs safely.
 - [Security & Privacy Guide](docs/trust/security-privacy.md) - What data leaves your network and how your credentials are used.
